@@ -44,7 +44,7 @@ export default function PaginaInicial() {
     let timer;
     function fetchLocation() {
         console.log(`fetching ${username}'s location`);
-        fetch(`http://api.github.com/users/${username}`)
+        fetch(`https://api.github.com/users/${username}`)
             .then(function (response) {
                 return response.json()
             })
