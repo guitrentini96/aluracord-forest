@@ -141,7 +141,7 @@ export default function PaginaInicial() {
                         />
                         <Button
                             type='submit'
-                            label='Entrar'
+                            label='Login'
                             fullWidth
                             buttonColors={{
                                 contrastColor: appConfig.theme.colors.neutrals["000"],
