@@ -45,11 +45,9 @@ export default function PaginaInicial() {
     function fetchLocation() {
         console.log(`fetching ${username}'s location`);
         fetch(`https://api.github.com/users/${username}`)
-            .then(function (response) {
-                return response.json()
-            })
-            .then(function (responseJSON) {
-                setLocation(responseJSON.location)
+            .then(async (response) => {
+                const responseJSON = await response.json();
+                setLocation(responseJSON.location);
             })
     }
 

@@ -1,33 +1,57 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzM5MjgwNywiZXhwIjoxOTU4OTY4ODA3fQ.iEZwKXS_oXfRhtUi_Yv2KwVneGWhVtx0HKFhitJf-kQ";
+const SUPABASE_URL = "https://rehvnnslcckwjiyzquvc.supabase.co";
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 
 export default function ChatPage() {
 
     const [mensagem, setMensagem] = React.useState("");
     const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
 
+    React.useEffect(() => {
+        supabaseClient
+            .from('messages')
+            .select('*')
+            .order('id', { ascending: false })
+            .then(({ data }) => {
+                console.log(data);
+                document.querySelector(".loading").style.display = "none";
+                setListaDeMensagens(data);
+            });
+    }, [])
+
     /*
-        Usuario
-            - Digita no campo textarea
+    Usuario
+    - Digita no campo textarea
             - aperta no enter para enviar
             - tem que adicionar o text na listagem
         Dev
-            - campo criado
+        - campo criado
             - usar onChange usa o useState (ter if para caso seja enter para limpar a variavel)
             - lista de mensagens
-    */
+            */
 
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            id: listaDeMensagens.length + 1,
             de: 'guitrentini96',
             texto: novaMensagem,
         };
-        setListaDeMensagens([
-            mensagem,
-            ...listaDeMensagens,
-        ]);
+
+        supabaseClient
+            .from('messages')
+            .insert([mensagem])
+            .then(({ data }) => {
+                setListaDeMensagens([
+                    data[0],
+                    ...listaDeMensagens,
+                ]);
+            })
+
         setMensagem("");
     }
 
@@ -37,6 +61,13 @@ export default function ChatPage() {
                 return msg.id != message_id
             })
         ])
+        supabaseClient
+            .from('messages')
+            .delete()
+            .eq('id', message_id)
+            .then(data => {
+                console.log(data)
+            })
     }
     return (
         <Box
@@ -76,15 +107,22 @@ export default function ChatPage() {
                         padding: '16px',
                     }}
                 >
+                    <Box className="loading"
+                        styleSheet={{
+                            positon: 'absolute',
+                            marginTop: '25vh'
+                        }}
+                    ></Box>
+
                     <MessageList mensagens={listaDeMensagens} deletarMensagem={deleteMessage} />
 
                     {/* {listaDeMensagens.map((currentMessage) => {
                         return (
                             <li key={currentMessage.id}>
-                                {currentMessage.de}: {currentMessage.texto}
+                            {currentMessage.de}: {currentMessage.texto}
                             </li>
-                        )
-                    })} */}
+                            )
+                        })} */}
 
                     <Box
                         as="form"
@@ -136,7 +174,7 @@ export default function ChatPage() {
                     </Box>
                 </Box>
             </Box>
-        </Box>
+        </Box >
     )
 }
 
@@ -159,7 +197,16 @@ function Header() {
 }
 
 function MessageList(props) {
-    console.log(props.mensagens)
+    // MessageList.onreadystatechange = function () {
+    //     if (MessageList.readyState !== "complete") {
+    //         console.log("Loading")
+    //     } else {
+    //         console.log("Loaded")
+    //     }
+    // };
+    // console.log(props.mensagens)
+
+    const [currentUserLocation, setCurrentUserLocation] = React.useState('')
     return (
         <Box
             tag="ul"
@@ -189,20 +236,83 @@ function MessageList(props) {
                         <Box
                             styleSheet={{
                                 marginBottom: '8px',
-                                display: 'flex'
+                                display: 'flex',
+                                alignItems: 'center'
                             }}
                         >
-                            <Image
-                                styleSheet={{
-                                    width: '20px',
-                                    height: '20px',
-                                    borderRadius: '50%',
-                                    display: 'inline-block',
-                                    marginRight: '8px',
+                            <Box
+                                onMouseEnter={(event) => {
+                                    console.log(event);
+                                    document.querySelector(`.banner${mensagem.id}`).style.display = 'flex';
+                                    document.querySelector(`.image${mensagem.id}`).style.display = "none"
+                                    document.querySelector(`.sender${mensagem.id}`).style.display = 'none'
+                                    fetch(`https://api.github.com/users/${mensagem.de}`)
+                                        .then(async (response) => {
+                                            const responseJSON = await response.json();
+                                            setCurrentUserLocation(responseJSON.location);
+                                        })
                                 }}
-                                src={`https://github.com/${mensagem.de}.png`}
-                            />
-                            <Text tag="strong">
+                                onMouseLeave={(event) => {
+                                    console.log(event)
+                                    document.querySelector(`.banner${mensagem.id}`).style.display = 'none'
+                                    document.querySelector(`.image${mensagem.id}`).style.display = "block"
+                                    document.querySelector(`.sender${mensagem.id}`).style.display = 'block'
+                                    setCurrentUserLocation('');
+                                }}
+
+                            >
+
+                                <Image
+                                    className={`image${mensagem.id}`}
+                                    styleSheet={{
+                                        width: '20px',
+                                        height: '20px',
+                                        borderRadius: '50%',
+                                        display: 'inline-block',
+                                        marginRight: '8px',
+                                    }}
+                                    src={`https://github.com/${mensagem.de}.png`}
+                                />
+                                <Box className={`banner${mensagem.id}`}
+                                    styleSheet={{
+                                        position: 'relative',
+                                        padding: '20px',
+                                        backgroundColor: appConfig.theme.colors.neutrals[800],
+                                        display: 'none',
+                                        borderRadius: '5px'
+                                    }}>
+                                    <Image
+                                        styleSheet={{
+                                            width: '40px',
+                                            height: '40px',
+                                            borderRadius: '50%',
+                                            display: 'inline-block',
+                                            marginRight: '15px',
+                                        }}
+                                        src={`https://github.com/${mensagem.de}.png`}
+                                    />
+                                    <Box styleSheet={{
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                    }}>
+                                        <Text tag="a" href={`https://github.com/${mensagem.de}`}
+                                            target="_blank"
+                                            rel="noreferrer noopener"
+                                            styleSheet={{
+                                                fontSize: "2rem",
+                                                color: "white"
+                                            }}>
+                                            {mensagem.de}
+                                        </Text>
+                                        <Text>
+                                            {currentUserLocation}
+                                        </Text>
+
+                                    </Box>
+
+                                </Box>
+                            </Box>
+                            <Text tag="strong" className={`sender${mensagem.id}`}>
                                 {mensagem.de}
                             </Text>
                             <Text
