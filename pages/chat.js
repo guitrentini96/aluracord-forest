@@ -29,9 +29,9 @@ export default function ChatPage() {
         supabaseClient
             .from('messages')
             .select('*')
-            .order('id', { ascending: false })
+            // .order('id', { ascending: false })
             .then(({ data }) => {
-                console.log(data);
+                console.log("todas as mensagens: ", data);
                 document.querySelector(".loading").style.display = "none";
                 setListaDeMensagens(data);
             });
@@ -40,8 +40,8 @@ export default function ChatPage() {
             // para reusar um valor de referencia, passa uma funçao pro setState
             setListaDeMensagens((valorAtualDaLista) => {
                 return [
-                    novaMensagem,
                     ...valorAtualDaLista,
+                    novaMensagem
                 ]
             });
         });
@@ -133,7 +133,7 @@ export default function ChatPage() {
                         }}
                     ></Box>
 
-                    <MessageList mensagens={listaDeMensagens} deletarMensagem={deleteMessage} />
+                    <MessageList mensagens={listaDeMensagens} deletarMensagem={deleteMessage} user={usuarioLogado} />
 
                     {/* {listaDeMensagens.map((currentMessage) => {
                         return (
@@ -232,23 +232,30 @@ function MessageList(props) {
     // console.log(props.mensagens)
 
     const [currentUserLocation, setCurrentUserLocation] = React.useState('');
-    const [lastUser, setLastUser] = React.useState('');
     return (
         <Box
             tag="ul"
             styleSheet={{
                 overflow: 'scroll',
                 display: 'flex',
-                flexDirection: 'column-reverse',
+                flexDirection: 'column',
                 flex: 1,
                 color: appConfig.theme.colors.neutrals["000"],
                 marginBottom: '16px',
             }}
         >
             {props.mensagens.map((mensagem) => {
-                if (props.mensagens.indexOf(mensagem) === 0) {
-                    console.log("Primeira mensagem: ", mensagem.texto)
-                }
+
+                let autorMensagemAnterior = props.mensagens.indexOf(mensagem) > 0
+                    ? props.mensagens[props.mensagens.indexOf(mensagem) - 1]["de"]
+                    : "";
+                // if (props.mensagens.indexOf(mensagem) === 0) {
+                //     console.log(`Primeira mensagem(${props.mensagens.indexOf(mensagem)}): ${mensagem.texto}`)
+                // }
+                // else {
+                //     console.log(`Mensagem numero ${props.mensagens.indexOf(mensagem)}: ${mensagem.texto}`)
+                //     console.log(`Mensagem anterior (${props.mensagens.indexOf(mensagem) - 1}): ${props.mensagens[props.mensagens.indexOf(mensagem) - 1].texto}`)
+                // }
                 return (
                     <Text
                         key={mensagem.id}
@@ -256,109 +263,111 @@ function MessageList(props) {
                         styleSheet={{
                             borderRadius: '5px',
                             padding: '6px',
-                            marginBottom: '12px',
+                            marginTop: autorMensagemAnterior != mensagem.de && ('12px'),
                             hover: {
                                 backgroundColor: appConfig.theme.colors.neutrals[700],
                             }
                         }}
                     >
-                        {/* {lastUser != mensagem.de && ( */}
+                        {autorMensagemAnterior != mensagem.de && (
 
-                        <Box
-                            styleSheet={{
-                                marginBottom: '8px',
-                                display: 'flex',
-                                alignItems: 'center'
-                            }}
-                        >
+                            // Box com foto, username e data
                             <Box
-                                onMouseEnter={(event) => {
-                                    console.log(event);
-                                    document.querySelector(`.banner${mensagem.id}`).style.display = 'flex';
-                                    document.querySelector(`.image${mensagem.id}`).style.display = "none"
-                                    document.querySelector(`.sender${mensagem.id}`).style.display = 'none'
-                                    fetch(`https://api.github.com/users/${mensagem.de}`)
-                                        .then(async (response) => {
-                                            const responseJSON = await response.json();
-                                            setCurrentUserLocation(responseJSON.location);
-                                        })
+                                styleSheet={{
+                                    marginBottom: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center'
                                 }}
-                                onMouseLeave={(event) => {
-                                    console.log(event)
-                                    document.querySelector(`.banner${mensagem.id}`).style.display = 'none'
-                                    document.querySelector(`.image${mensagem.id}`).style.display = "block"
-                                    document.querySelector(`.sender${mensagem.id}`).style.display = 'block'
-                                    setCurrentUserLocation('');
-                                }}
-
                             >
-
-                                <Image
-                                    className={`image${mensagem.id}`}
-                                    styleSheet={{
-                                        width: '20px',
-                                        height: '20px',
-                                        borderRadius: '50%',
-                                        display: 'inline-block',
-                                        marginRight: '8px',
+                                <Box
+                                    onMouseEnter={(event) => {
+                                        console.log(event);
+                                        document.querySelector(`.banner${mensagem.id}`).style.display = 'flex';
+                                        document.querySelector(`.image${mensagem.id}`).style.display = "none"
+                                        document.querySelector(`.sender${mensagem.id}`).style.display = 'none'
+                                        fetch(`https://api.github.com/users/${mensagem.de}`)
+                                            .then(async (response) => {
+                                                const responseJSON = await response.json();
+                                                setCurrentUserLocation(responseJSON.location);
+                                            })
                                     }}
-                                    src={`https://github.com/${mensagem.de}.png`}
-                                />
-                                <Box className={`banner${mensagem.id}`}
-                                    styleSheet={{
-                                        position: 'relative',
-                                        padding: '20px',
-                                        backgroundColor: appConfig.theme.colors.neutrals[800],
-                                        display: 'none',
-                                        borderRadius: '5px'
-                                    }}>
+                                    onMouseLeave={(event) => {
+                                        console.log(event)
+                                        document.querySelector(`.banner${mensagem.id}`).style.display = 'none'
+                                        document.querySelector(`.image${mensagem.id}`).style.display = "block"
+                                        document.querySelector(`.sender${mensagem.id}`).style.display = 'block'
+                                        setCurrentUserLocation('');
+                                    }}
+
+                                >
+
                                     <Image
+                                        className={`image${mensagem.id}`}
                                         styleSheet={{
-                                            width: '40px',
-                                            height: '40px',
+                                            width: '20px',
+                                            height: '20px',
                                             borderRadius: '50%',
                                             display: 'inline-block',
-                                            marginRight: '15px',
+                                            marginRight: '8px',
                                         }}
                                         src={`https://github.com/${mensagem.de}.png`}
                                     />
-                                    <Box styleSheet={{
-                                        display: 'flex',
-                                        flexDirection: 'column'
-                                    }}>
-                                        <Text tag="a" href={`https://github.com/${mensagem.de}`}
-                                            target="_blank"
-                                            rel="noreferrer noopener"
+                                    <Box className={`banner${mensagem.id}`}
+                                        styleSheet={{
+                                            position: 'relative',
+                                            padding: '20px',
+                                            backgroundColor: appConfig.theme.colors.neutrals[800],
+                                            display: 'none',
+                                            borderRadius: '5px'
+                                        }}>
+                                        <Image
                                             styleSheet={{
-                                                fontSize: "2rem",
-                                                color: "white"
-                                            }}>
-                                            {mensagem.de}
-                                        </Text>
-                                        <Text>
-                                            {currentUserLocation}
-                                        </Text>
+                                                width: '40px',
+                                                height: '40px',
+                                                borderRadius: '50%',
+                                                display: 'inline-block',
+                                                marginRight: '15px',
+                                            }}
+                                            src={`https://github.com/${mensagem.de}.png`}
+                                        />
+                                        <Box styleSheet={{
+                                            display: 'flex',
+                                            flexDirection: 'column'
+                                        }}>
+                                            <Text tag="a" href={`https://github.com/${mensagem.de}`}
+                                                target="_blank"
+                                                rel="noreferrer noopener"
+                                                styleSheet={{
+                                                    fontSize: "2rem",
+                                                    color: "white"
+                                                }}>
+                                                {mensagem.de}
+                                            </Text>
+                                            <Text>
+                                                {currentUserLocation}
+                                            </Text>
+
+                                        </Box>
 
                                     </Box>
-
                                 </Box>
+                                <Text tag="strong" className={`sender${mensagem.id}`}>
+                                    {mensagem.de}
+                                </Text>
+                                <Text
+                                    styleSheet={{
+                                        fontSize: '10px',
+                                        marginLeft: '8px',
+                                        color: appConfig.theme.colors.neutrals[300],
+                                    }}
+                                    tag="span"
+                                >
+                                    {(new Date().toLocaleDateString())}
+                                </Text>
                             </Box>
-                            <Text tag="strong" className={`sender${mensagem.id}`}>
-                                {mensagem.de}
-                            </Text>
-                            <Text
-                                styleSheet={{
-                                    fontSize: '10px',
-                                    marginLeft: '8px',
-                                    color: appConfig.theme.colors.neutrals[300],
-                                }}
-                                tag="span"
-                            >
-                                {(new Date().toLocaleDateString())}
-                            </Text>
-                        </Box>
-                        {/* // )} */}
-                        {/* Box com mensagem e icone de apagar: */}
+                        )}
+
+                        {/* Box com mensagem e icone de excluir: */}
                         <Box
                             styleSheet={{
                                 display: "flex",
@@ -377,23 +386,27 @@ function MessageList(props) {
                                     <Text>{mensagem.texto}</Text>
                                 )}
                             {/* aqui vai o icone de excluir:  */}
-                            <Text
-                                styleSheet={{
-                                    fontSize: '14px',
-                                    marginLeft: 'auto',
-                                    color: appConfig.theme.colors.neutrals[300],
-                                    hover: {
-                                        cursor: "pointer"
-                                    }
-                                }}
-                                tag="span"
-                                onClick={() => {
-                                    props.deletarMensagem(mensagem.id)
-                                }}
-                            >
-                                x
+                            {props.user === mensagem.de && (
 
-                            </Text>
+
+                                <Text
+                                    styleSheet={{
+                                        fontSize: '14px',
+                                        marginLeft: 'auto',
+                                        color: appConfig.theme.colors.neutrals[300],
+                                        hover: {
+                                            cursor: "pointer"
+                                        }
+                                    }}
+                                    tag="span"
+                                    onClick={() => {
+                                        props.deletarMensagem(mensagem.id)
+                                    }}
+                                >
+                                    x
+
+                                </Text>
+                            )}
                         </Box>
                     </Text>
 
