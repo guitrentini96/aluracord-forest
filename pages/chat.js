@@ -2,14 +2,26 @@ import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
 import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/router';
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker'
 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzM5MjgwNywiZXhwIjoxOTU4OTY4ODA3fQ.iEZwKXS_oXfRhtUi_Yv2KwVneGWhVtx0HKFhitJf-kQ";
 const SUPABASE_URL = "https://rehvnnslcckwjiyzquvc.supabase.co";
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function escutaMensagensEmTempoReal(adicionaMensagem) {
+    return supabaseClient
+        .from('messages')
+        .on('INSERT', (respostaLive) => {
+            adicionaMensagem(respostaLive.new);
+        })
+        .subscribe()
+}
 
 export default function ChatPage() {
 
+    const roteamento = useRouter();
+    const usuarioLogado = roteamento.query.username;
     const [mensagem, setMensagem] = React.useState("");
     const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
 
@@ -23,6 +35,16 @@ export default function ChatPage() {
                 document.querySelector(".loading").style.display = "none";
                 setListaDeMensagens(data);
             });
+        escutaMensagensEmTempoReal((novaMensagem) => {
+            // console.log("Nova mensagem: ", novaMensagem);
+            // para reusar um valor de referencia, passa uma funçao pro setState
+            setListaDeMensagens((valorAtualDaLista) => {
+                return [
+                    novaMensagem,
+                    ...valorAtualDaLista,
+                ]
+            });
+        });
     }, [])
 
     /*
@@ -38,7 +60,7 @@ export default function ChatPage() {
 
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            de: 'guitrentini96',
+            de: usuarioLogado,
             texto: novaMensagem,
         };
 
@@ -46,11 +68,8 @@ export default function ChatPage() {
             .from('messages')
             .insert([mensagem])
             .then(({ data }) => {
-                setListaDeMensagens([
-                    data[0],
-                    ...listaDeMensagens,
-                ]);
-            })
+                console.log('criando nova mensagem: ', data)
+            });
 
         setMensagem("");
     }
@@ -156,6 +175,11 @@ export default function ChatPage() {
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
                         />
+                        <ButtonSendSticker
+                            onStickerClick={(sticker) => {
+                                console.log("[USANDO O COMPONENTE]salva esse sticker no banco", sticker)
+                                handleNovaMensagem(':sticker: ' + sticker);
+                            }} />
                         <Button
                             label='Send'
                             onClick={() => {
@@ -168,7 +192,8 @@ export default function ChatPage() {
                                 mainColorStrong: appConfig.theme.colors.primary[500],
                             }}
                             styleSheet={{
-                                height: "80%"
+                                height: "80%",
+                                marginLeft: '10px'
                             }}
                         />
                     </Box>
@@ -206,7 +231,8 @@ function MessageList(props) {
     // };
     // console.log(props.mensagens)
 
-    const [currentUserLocation, setCurrentUserLocation] = React.useState('')
+    const [currentUserLocation, setCurrentUserLocation] = React.useState('');
+    const [lastUser, setLastUser] = React.useState('');
     return (
         <Box
             tag="ul"
@@ -220,6 +246,9 @@ function MessageList(props) {
             }}
         >
             {props.mensagens.map((mensagem) => {
+                if (props.mensagens.indexOf(mensagem) === 0) {
+                    console.log("Primeira mensagem: ", mensagem.texto)
+                }
                 return (
                     <Text
                         key={mensagem.id}
@@ -233,6 +262,8 @@ function MessageList(props) {
                             }
                         }}
                     >
+                        {/* {lastUser != mensagem.de && ( */}
+
                         <Box
                             styleSheet={{
                                 marginBottom: '8px',
@@ -325,7 +356,27 @@ function MessageList(props) {
                             >
                                 {(new Date().toLocaleDateString())}
                             </Text>
-
+                        </Box>
+                        {/* // )} */}
+                        {/* Box com mensagem e icone de apagar: */}
+                        <Box
+                            styleSheet={{
+                                display: "flex",
+                                justifyContent: "space-between"
+                            }}>
+                            {/* mensagem: */}
+                            {mensagem.texto.startsWith(':sticker:')
+                                ? (
+                                    <Image src={mensagem.texto.replace(':sticker:', "")}
+                                        styleSheet={{
+                                            maxWidth: '200px',
+                                            maxHeight: '200px'
+                                        }} />
+                                )
+                                : (
+                                    <Text>{mensagem.texto}</Text>
+                                )}
+                            {/* aqui vai o icone de excluir:  */}
                             <Text
                                 styleSheet={{
                                     fontSize: '14px',
@@ -343,9 +394,7 @@ function MessageList(props) {
                                 x
 
                             </Text>
-
                         </Box>
-                        {mensagem.texto}
                     </Text>
 
                 )

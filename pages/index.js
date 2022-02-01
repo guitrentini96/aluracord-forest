@@ -41,7 +41,11 @@ export default function PaginaInicial() {
     const [username, setUsername] = React.useState('guitrentini96');
     const roteamento = useRouter();
     const [location, setLocation] = React.useState();
+
+
     let timer;
+
+
     function fetchLocation() {
         console.log(`fetching ${username}'s location`);
         fetch(`https://api.github.com/users/${username}`)
@@ -82,7 +86,7 @@ export default function PaginaInicial() {
                         onSubmit={function (event) {
                             event.preventDefault();
                             console.log("alguem submeteu o form");
-                            roteamento.push('/chat');
+                            roteamento.push(`/chat?username=${username}`);
                         }}
                         styleSheet={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
