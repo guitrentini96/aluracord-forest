@@ -18,6 +18,8 @@ function escutaMensagensEmTempoReal(adicionaMensagem) {
         .subscribe()
 }
 
+
+
 export default function ChatPage() {
 
     const roteamento = useRouter();
@@ -29,7 +31,7 @@ export default function ChatPage() {
         supabaseClient
             .from('messages')
             .select('*')
-            // .order('id', { ascending: false })
+            .order('id')
             .then(({ data }) => {
                 console.log("todas as mensagens: ", data);
                 document.querySelector(".loading").style.display = "none";
@@ -230,7 +232,6 @@ function MessageList(props) {
     //     }
     // };
     // console.log(props.mensagens)
-
     const [currentUserLocation, setCurrentUserLocation] = React.useState('');
     return (
         <Box
@@ -412,6 +413,15 @@ function MessageList(props) {
 
                 )
             })}
+            {/* <Text
+                key='9999999999999999999999'
+                tag="li"
+                styleSheet={{
+                    backgroundColor: 'green'
+                }}
+            >
+                ULTIMA MSG
+            </Text> */}
         </Box>
     )
 }
